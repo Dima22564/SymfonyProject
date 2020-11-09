@@ -6,16 +6,24 @@ namespace App\Model\User\Entity\User;
 
 use DateTimeImmutable;
 use Webmozart\Assert\Assert;
+use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Class ResetToken
+ * @package App\Model\User\Entity\User
+ * @ORM\Embeddable
+ */
 class ResetToken
 {
     /**
      * @var string
+     * @ORM\Column(type="string", nullable=true)
      */
     private string $token;
 
     /**
      * @var DateTimeImmutable
+     * @ORM\Column(type="datetime_immutable", nullable=true)
      */
     private DateTimeImmutable $expires;
 
@@ -44,5 +52,13 @@ class ResetToken
      */
     public function getToken(): string {
         return $this->token;
+    }
+
+    /**
+     * @return bool
+     * @internal for post load
+     */
+    public function isEmpty(): bool {
+        return empty($this->token);
     }
 }

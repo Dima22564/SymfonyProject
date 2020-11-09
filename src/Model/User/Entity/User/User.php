@@ -6,58 +6,71 @@ namespace App\Model\User\Entity\User;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 
+use Doctrine\ORM\Mapping as ORM;
+
 /**
  * Class User
  * @package App\Model\User\Entity\User
+ * @ORM\Entity
+ * @ORM\HasLifecycleCallbacks
+ * @ORM\Table(name="users", uniqueConstraints={
+ *  @ORM\UniqueConstraint(columns={"email"}),
+ *  @ORM\UniqueConstraint(columns={"reset_token_token"}),
+ *  @ORM\UniqueConstraint(columns={"confirm_token"}),
+ * })
  */
 class User
 {
-    /**
-     *
-     */
     private const STATUS_WAIT = 'wait';
-
-    /**
-     *
-     */
     private const STATUS_ACTIVE = 'active';
-    /**
-     *
-     */
     private const STATUS_NEW = 'new';
 
     /**
      * @var string
+     * @ORM\Column(type="string", name="status")
      */
     private string $status;
 
     /**
+     * @var Role
+     * @ORM\Column(type="user_user_role")
+     */
+    private Role $role;
+
+    /**
      * @var Id
+     * @ORM\Column(type="user_user_id")
+     * @ORM\Id
      */
     private Id $id;
 
     /**
      * @var DateTimeImmutable
+     * @ORM\Column(type="datetime_immutable", name="date")
      */
     private DateTimeImmutable $date;
 
     /**
-     * @var Email
+     * @var Email|null
+     * @ORM\Column(type="user_user_email", nullable=true)
      */
     private Email $email;
 
     /**
      * @var ResetToken|null
+     * @ORM\Embedded(class="ResetToken", columnPrefix="reset_token_")
      */
     private ?ResetToken $resetToken;
 
     /**
      * @var string
+     * @ORM\Column(type="string", nullable=true, name="password_hash")
      */
     private string $passwordHash;
 
     /**
      * @var Network[]|ArrayCollection
+     * @ORM\OneToMany(targetEntity="App\Model\User\Entity\User\Network", mappedBy="user", orphanRemoval=true, cascade={"persist"})
      */
     private $networks;
 
@@ -79,6 +92,7 @@ class User
 
     /**
      * @var string
+     * @ORM\Column(type="string", nullable=true, name="confirm_token")
      */
     private ?string $confirmToken;
 
@@ -104,6 +118,7 @@ class User
         $this->id = $id;
         $this->status = self::STATUS_NEW;
         $this->networks = new ArrayCollection();
+        $this->role = Role::user();
     }
 
     /**
@@ -139,7 +154,8 @@ class User
      * @param string $network
      * @param string $identity
      */
-    private function attachNetwork(string $network, string $identity): void {
+    private function attachNetwork(string $network, string $identity): void
+    {
         foreach ($this->networks as $existing) {
             if ($existing->isForNetwork($network)) {
                 // TODO Exception
@@ -220,7 +236,8 @@ class User
      * @param ResetToken $resetToken
      * @param DateTimeImmutable $date
      */
-    public function requestPasswordReset(ResetToken $resetToken, DateTimeImmutable $date): void {
+    public function requestPasswordReset(ResetToken $resetToken, DateTimeImmutable $date): void
+    {
         if ($this->isActive()) {
             // TODO Exception
         }
@@ -233,7 +250,12 @@ class User
         $this->resetToken = $resetToken;
     }
 
-    public function passwordReset(DateTimeImmutable $date, string $hash): void {
+    /**
+     * @param DateTimeImmutable $date
+     * @param string $hash
+     */
+    public function passwordReset(DateTimeImmutable $date, string $hash): void
+    {
         if (!$this->resetToken) {
             // TODO Exception
         }
@@ -241,6 +263,34 @@ class User
             // TODO Exception
         }
         $this->passwordHash = $hash;
+    }
+
+    /**
+     * @return Role
+     */
+    public function getRole(): Role
+    {
+        return $this->role;
+    }
+
+    /**
+     * @param Role $role
+     */
+    public function changeRole(Role $role): void
+    {
+        if ($this->role->isEqual($role)) {
+            // TODO Exception
+        }
+        $this->role = $role;
+    }
+
+    /**
+     * @ORM\PostLoad()
+     */
+    public function checkEmbeds(): void {
+        if ($this->resetToken->isEmpty()) {
+            $this->resetToken = null;
+        }
     }
 
 }
