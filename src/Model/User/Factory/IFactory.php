@@ -4,7 +4,9 @@
 namespace App\Model\User\Factory;
 
 
-class IFactory
-{
+use App\Model\User\Entity\User\User;
 
+interface IFactory
+{
+    public static function getUser(): User;
 }
